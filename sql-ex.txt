@@ -1,0 +1,10 @@
+<select id="selectDepartment">
+	select b.row_id, concat(lpad('-', (length(b.dept_code) - length(a.dept_code)) *2/ 3, '-'), b.dept_name) as value
+	from department a, department b
+	where b.del_flag=0
+	  and b.dept_code like concat(a.dept_code,'%')
+	<isNotEmpty property="userDeptCode">
+		<![CDATA[and a.dept_code = :userDeptCode]]>
+	</isNotEmpty>
+	order by b.dept_code
+</select>

@@ -1,0 +1,33 @@
+
+<html>
+<head>
+	<script src="jquery.min.js"></script>
+	<script>
+		function callWebService(){
+		　　var soapMessage='<?xml version="1.0" encoding="utf-8"?>'
+						   +'<soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">'
+						   +'<soap:Body>'
+						   +	'<MeetingList xmlns="http://WebXml.com.cn/">'
+						   +	  '<theCityName>掴奨</theCityName>'
+						   +		'</MeetingList>'
+						   +	  '</soap:Body>'
+						   +'</soap:Envelope>';
+		 
+		　　$.ajax({
+		　　　　url: "http://221.231.14.165:81/EpointWebservice/Webservice/CateInfoService.asmx",
+		　　　　type: "POST",
+		　　　　dataType: "text",
+				contentType: "text/xml; charset=\"utf-8\"",
+		　　　　data: soapMessage,
+		　　　　success: function(data){
+					$("body").text(data);
+				}
+		　　}); 
+		　　return false;
+		}
+	</script>
+</head>
+<body onload="callWebService();">
+	
+</body>
+</html>

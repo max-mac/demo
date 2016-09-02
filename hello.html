@@ -1,0 +1,487 @@
+﻿<!DOCTYPE html>
+<html>
+	<head>
+		<meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+
+		<title>Basic Application</title>
+		<link rel="stylesheet" type="text/css" href="http://www.jeasyui.com/easyui/themes/gray/easyui.css">
+		<link rel="stylesheet" type="text/css" href="http://www.jeasyui.com/easyui/themes/icon.css">
+		<script type="text/javascript" src="http://code.jquery.com/jquery-1.6.min.js"></script>
+		<script type="text/javascript" src="http://www.jeasyui.com/easyui/jquery.easyui.min.js"></script>
+		
+		<script type="text/javascript" src="http://api.map.baidu.com/api?v=1.4"></script>
+		<style>
+			a{text-decoration:none;}
+			
+			.customer_save, .customer_save tr{border:solid 1px #ccc;}
+			.customer_save{-webkit-transition:all 0.3s ease-out;width:90%;margin:15px 5%;border-collapse:collapse;}
+			.customer_save tr{height:35px;}
+			.customer_save th{width:15%;text-align:right;font-weight:normal;background:#F3F3F3;}
+			.customer_save td{width:35%;}
+			.customer_save input{margin-left:5px;}
+			.customer_save a.easyui-linkbutton{margin:0 5px;}
+			.customer_save_edit{-webkit-transform:scale(1.05);margin-top:50px;margin-bottom:50px;}
+			
+			.common_addr, .common_addr tr, .common_addr td, .common_addr th{border:solid 1px #ccc;}
+			.common_addr{margin:15px;border-collapse:collapse;}
+			.common_addr tr{height:30px;}
+			.common_addr th{font-weight:normal;background:#F3F3F3;text-align:center;}
+			.common_addr th input{width:60px;}
+			.common_addr td input{margin-left:5px;width:250px;}
+			
+			.weekPlan{width:100%;border-collapse:collapse;margin-top:5px;}
+			.weekTitle{width:50px;text-align:center;color:#eee;font-weight:normal;}
+			.cusList{position:relative;width:16%;float:left;border:solid 1px #99BBE8;margin-left:8px;}
+			.cusList li{margin:5px;border:dashed 1px #888;}
+			.cusList li table{border-collapse:collapse;display:block;}
+			.cusList li a{display:none;}
+			.cusList li img{width:90%;}
+			.cusList span.date{position:absolute;left:15px;font-weight:bold;font-size:1.2em;border:solid 2px #000;padding:2px;border-radius:5px;}
+			.cusList span.mills{position:absolute;top:-10px;right:50px;font-weight:bold;border:solid 2px #000;padding:2px;border-radius:500px;}
+			.cusList a.op{position:absolute;top:2px;right:5px;border:solid 1px #000;padding:2px 5px;;border-radius:5px;color:black;display:none;}
+			.cusList a.op:hover{color:white;border:solid 1px #fff;}
+			.cusList input{font-size:10px;color:#3f3f3f;}
+		</style>
+		<script>
+			$(function(){
+				initDatabase();
+				listCustommers();
+				
+				//initMap();
+				
+				
+			});
+			function initDatabase(){
+				window.db=openDatabase("newdb", "1.0", "new database", 2 * 1024 * 1024);
+				window.db.transaction(function(tx){
+					tx.executeSql("CREATE TABLE IF NOT EXISTS CUSTOMER (id unique, name, account, address, addr_en, zip, telephone, longitude, latitude)");
+					//tx.executeSql("DROP TABLE CUSTOMER");
+				});
+			}
+			function initMap(){
+				$("#map").height(window.innerHeight-32);
+				var map=new BMap.Map("map");
+				map.centerAndZoom("南京", 15);
+			}
+			function clearCustomer(){
+				$(".customer_save input").val("");
+			}
+			function saveCustomer(){
+				var name=$("#name").val();
+				var account=$("#account").val();
+				var address=$("#address").val();
+				var addr_en=$("#addr_en").val();
+				var zip=$("#zip").val();
+				var telephone=$("#telephone").val();
+				if(account==""){
+					$.messager.alert("提醒！","请输入账号!","info");
+					return;
+				}
+				if(address==""){
+					$.messager.alert("提醒！","请输入地址!","info");
+					return;
+				}
+				if(addr_en==""){
+					$.messager.alert("提醒！","请输入英文地址!","info");
+					return;
+				}
+				if(window.needEditCustomer){
+					var id=window.needEditCustomer.id;
+					if(address==window.needEditCustomer.address){
+						window.db.transaction(function(tx){
+							tx.executeSql("UPDATE CUSTOMER SET name='"+name+"', account='"+account+"', addr_en='"+addr_en+"', zip='"+zip+"', telephone='"+telephone+"' WHERE id='"+id+"'");
+						},function(){
+							
+						},function(){
+							$.messager.alert("提醒！","数据保存成功!","info");
+							listCustommers();
+							cancelEdit();
+						});
+					}else{
+						$.messager.confirm("确认","已修改了地址，需要重新计算在地图上的位置吗？",function(result){
+							if(result){
+								var myGeo=new BMap.Geocoder();
+								myGeo.getPoint(address,function(point){
+									window.db.transaction(function(tx){
+										if(point)
+											tx.executeSql("UPDATE CUSTOMER SET name='"+name+"', account='"+account+"', address='"+address+"', addr_en='"+addr_en+"', zip='"+zip+"', telephone='"+telephone+"', longitude="+point.lng+", latitude="+point.lat+" WHERE id='"+id+"'");
+										else
+											tx.executeSql("UPDATE CUSTOMER SET name='"+name+"', account='"+account+"', address='"+address+"', addr_en='"+addr_en+"', zip='"+zip+"', telephone='"+telephone+"' WHERE id='"+id+"'");
+									},function(){
+									
+									},function(){
+										$.messager.alert("提醒！","数据保存成功!","info");
+										listCustommers();
+										cancelEdit();
+									});
+								});
+							}else{
+								window.db.transaction(function(tx){
+									tx.executeSql("UPDATE CUSTOMER SET name='"+name+"', account='"+account+"', address='"+address+"', addr_en='"+addr_en+"', zip='"+zip+"', telephone='"+telephone+"' WHERE id='"+id+"'");
+								},function(){
+									
+								},function(){
+									$.messager.alert("提醒！","数据保存成功!","info");
+									listCustommers();
+									cancelEdit();
+								});
+							}
+						});
+					}
+				}else{
+					var id=getID();
+					var myGeo=new BMap.Geocoder();
+					myGeo.getPoint(address,function(point){
+						window.db.transaction(function(tx){
+							if(point)
+								tx.executeSql("INSERT INTO CUSTOMER (id, name, account, address, addr_en, zip, telephone, longitude, latitude) VALUES ('"+id+"', '"+name+"', '"+account+"', '"+address+"', '"+addr_en+"', '"+zip+"', '"+telephone+"', "+point.lng+", "+point.lat+")");
+							else
+								tx.executeSql("INSERT INTO CUSTOMER (id, name, account, address, addr_en, zip, telephone, longitude, latitude) VALUES ('"+id+"', '"+name+"', '"+account+"', '"+address+"', '"+addr_en+"', '"+zip+"', '"+telephone+"', null, null)");
+						},function(){
+						
+						},function(){
+							$.messager.alert("提醒！","数据保存成功!","info");
+							listCustommers();
+						});
+					});
+				}
+			}
+			function listCustommers(conditions){
+				window.db.transaction(function(tx){
+					tx.executeSql("SELECT * FROM CUSTOMER"+(conditions||""),[],function(tx,results){
+						var data=[];
+						for(var i=0;i<results.rows.length;i++){
+							data.push(results.rows.item(i));
+						}
+						window.customers=data;
+						initDagagrid();
+						listPlan();
+					});
+				},function(){},function(){});
+			}
+			function searchCustomers(){
+				var name=$("#name").val();
+				var account=$("#account").val();
+				var address=$("#address").val();
+				var addr_en=$("#addr_en").val();
+				var zip=$("#zip").val();
+				var telephone=$("#telephone").val();
+				
+				var conditions=[];
+				name=(name!=""?" AND name LIKE '%"+name+"%'":null);
+				name?conditions.push(name):null;
+				account=(account!=""?" AND account LIKE '%"+account+"%'":null);
+				account?conditions.push(account):null;
+				address=(address!=""?" AND address LIKE '%"+address+"%'":null);
+				address?conditions.push(address):null;
+				addr_en=(addr_en!=""?" AND addr_en LIKE '%"+addr_en+"%'":null);
+				addr_en?conditions.push(addr_en):null;
+				zip=(zip!=""?" AND zip LIKE '%"+zip+"%'":null);
+				zip?conditions.push(zip):null;
+				telephone=(telephone!=""?" AND telephone LIKE '%"+telephone+"%'":null);
+				telephone?conditions.push(telephone):null;
+				
+				listCustommers(" WHERE 1=1"+conditions.join(""))
+			}
+			function deleteCustomers(){
+				var rows=$("#customerGrid").datagrid("getChecked");
+				if(rows.length==0){
+					$.messager.alert("提醒！","请选择要删除的数据!","info");
+					return;
+				}
+				$.messager.confirm("删除","确认要删除已选择的客户吗？",function(result){
+					if(result){
+						window.db.transaction(function(tx){
+							for(var i=0;i<rows.length;i++){
+								tx.executeSql("DELETE FROM CUSTOMER WHERE id='"+rows[i].id+"'");
+							}
+						},function(){},function(){
+							$.messager.alert("提醒！","数据删除成功!","info");
+							listCustommers();
+						});
+					}
+				});
+			}
+			function editCustomer(id){
+				var customer;
+				for(var i=0;i<window.customers.length;i++){
+					if(window.customers[i].id==id){
+						window.needEditCustomer=customer=window.customers[i];
+						break;
+					}
+				}
+				$("#name").val(customer.name);
+				$("#account").val(customer.account);
+				$("#address").val(customer.address);
+				$("#addr_en").val(customer.addr_en);
+				$("#zip").val(customer.zip);
+				$("#telephone").val(customer.telephone);
+				
+				$("a[name=searchBtn]").hide();
+				$("a[name=cancelBtn]").show();
+				$(".customer_save").addClass("customer_save_edit");
+			}
+			function initDagagrid(){
+				if(window.dgInit){
+					$("#customerGrid").datagrid("loadData",window.customers);
+				} else{
+					$("#customerGrid").datagrid({
+						title:"客户列表",
+						data:window.customers,
+						striped:true,
+						rownumbers:true,
+						singleSelect:true,
+						checkOnSelect:false,
+						selectOnCheck:false,
+						fitColumns:true,
+						toolbar:[{
+							text:"删除",
+							iconCls:"icon-remove",
+							handler:deleteCustomers
+						}],
+						columns:[[
+							{field:"id",checkbox:true},
+							{field:"name",      title:"名称",    	  width:100},
+							{field:"account",   title:"账号",    	  width:100},
+							{field:"address",   title:"地址",    	  width:400},
+							{field:"addr_en",   title:"地址（英文）", width:400},
+							{field:"zip",       title:"邮编",    	  width:100},
+							{field:"telephone", title:"电话",    	  width:100},
+							{field:"longitude", title:"Baidu经度",    width:100},
+							{field:"latitude",  title:"Baidu纬度",    width:100},
+							{field:"op",        title:"",        	  width:100,    formatter:function(value,row){
+								return '<a id="" href="#" onclick="editCustomer(\''+row.id+'\');">修改</a>&nbsp;&nbsp;&nbsp;'
+									  +'<a id="" href="#" onclick="openMapWin(\''+row.id+'\','+row.longitude+','+row.latitude+');">地图显示</a>';
+							}}
+						]]
+					});
+					window.dgInit=true;
+				}
+			}
+			function openMapWin(id,longitude,latitude){
+				$("#win").window("open");
+				if(!window.winMap){
+					window.winMap=new BMap.Map("windowMap");
+					window.winMap.addControl(new BMap.NavigationControl());
+					window.winMap.addControl(new BMap.ScaleControl({anchor: BMAP_ANCHOR_BOTTOM_RIGHT}));
+					window.winMap.addControl(new BMap.MapTypeControl());
+				}
+				
+				var point=new BMap.Point(longitude,latitude);
+				window.winMap.centerAndZoom(point,15);
+				var marker=new BMap.Marker(point,{enableDragging:true});
+				window.winMap.clearOverlays()
+				window.winMap.addOverlay(marker);
+				marker.addEventListener("dragend",function(e){
+					$.messager.confirm("确认","需要修改位置吗？",function(result){
+						if(result){
+							window.db.transaction(function(tx){
+								tx.executeSql("UPDATE CUSTOMER SET longitude="+e.point.lng+", latitude="+e.point.lat+" WHERE id='"+id+"'");
+							},function(){},function(){
+								$.messager.alert("提醒！","位置修改成功!","info");
+								listCustommers();
+							});
+						}
+					});
+				});
+			}
+			
+			function getID(){
+				var time=new Date();
+				return time.getTime()+""+Math.floor(Math.random()*100000);
+			}
+			function cancelEdit(){
+				window.needEditCustomer=null;
+				//clearCustomer();
+				$("a[name=searchBtn]").show();
+				$("a[name=cancelBtn]").hide();
+				$(".customer_save").removeClass("customer_save_edit");
+			}
+			function addCommonAddr(){
+				$('<tr><th><input value=""></th><td><input></td></tr>').appendTo(".common_addr tbody");
+			}
+			function getRandomCustomer(){
+				if(!window.cloneCustomers){
+					window.cloneCustomers=[];
+					for(var i=0;i<window.customers.length;i++){
+						window.cloneCustomers.push(window.customers[i]);
+					}
+				}
+				if(window.cloneCustomers.length==0)
+					return null;
+				else
+					return cloneCustomers.splice(Math.floor(Math.random()*cloneCustomers.length),1)[0];
+			}
+			function getRouteDistance(cus1,cus2,$li){
+				if(!cus1.longitude || !cus1.latitude || !cus2.longitude || !cus2.latitude){
+					setDistance($li,0);
+					return;
+				}
+				var transit = new BMap.DrivingRoute("南京",{onSearchComplete:function($li){
+					return function(result){
+						if(transit.getStatus() != BMAP_STATUS_SUCCESS){
+							setDistance($li,0);
+						}else
+							setDistance($li,Math.ceil(result.getPlan(0).getDistance(false)/1000));
+					}
+				}($li)});
+				
+				transit.search(new BMap.Point(cus1.longitude,cus1.latitude),new BMap.Point(cus2.longitude,cus2.latitude));
+			}
+			function setDistance($li,distance){
+				$li.find("span.cusDistance").text(distance+"km");
+				var total=$li.closest("ol").find(".mills").data("total");
+				if(!total)
+					total=0;
+				$li.closest("ol").find(".mills").text("总计:"+(total+distance));
+				$li.closest("ol").find(".mills").data("total",total+distance);
+			}
+			function listPlan(){
+				var year=2014;
+				var month=1;
+				
+				var monthDays;
+				if(month!=2)
+					monthDays=[0,31,28,31,30,31,30,31,31,30,31,30,31][month];
+				else
+					monthDays=(year%4==0?29:28);
+				
+				var firstDay=new Date(year+"-"+month+"-1").getDay();
+				var weeks=Math.ceil((monthDays+firstDay-1)/7);
+				
+				var colors=["252,79,83","253,122,52","28,186,189","152,192,41","253,204,76","180,18,33"];
+				for(var i=0;i<weeks;i++){
+					var html='<table class="weekPlan" style="border:solid 2px rgba('+colors[i]+',1);"><tr>'
+							+	'<th class="weekTitle" style="background:rgba('+colors[i]+',1);">第'+(i+1)+'周</th>'
+							+	'<td style="background:rgba('+colors[i]+',0.3);">'
+							+	'</td>'
+							+'</tr></table>';
+					var $weekPlan=$(html).appendTo("#customerPlan");
+					
+					for(var j=0;j<5;j++){
+						var thisDate=i*7+j+1-(firstDay-1);
+						
+						if(thisDate<1){
+							$('<ol class="cusList" style="border:0;"></ol>').appendTo($weekPlan.find("td:first"));
+							continue;
+						}
+						if(thisDate>monthDays)
+							continue;
+						
+						html='<ol class="cusList">'
+							+	'<span class="date">'+thisDate+'</span><input style="margin-left:6px;width:60px;" value="office"><span class="mills" style="background:rgba('+colors[i]+',1);">总计:0</span><a href="#" class="op">清空</a>'
+							+'</ol>';
+						var $cusList=$(html).appendTo($weekPlan.find("td:first"));
+						
+						for(var k=0;k<6;k++){
+							html='<li>'
+								+	'<table width="100%"><tr width="100%">'
+								+		'<td width="10%" align="center"><img src="http://www.web07.cn/UpImg/Png/201302/03/png299928031037241.png"></td>'
+								+		'<td width="30%" align="center"><span class="cusDistance">0公里</span></td>'
+								+		'<td width="60%" align="right"><a name="moveUp" href="#">上移</a>&nbsp;<a name="moveDown" href="#">下移</a>&nbsp;<a name="deleteLi" href="#">删除</a></td>'
+								+	'</tr></table>'
+								+	'<div><input style="width:95%;"></div>'
+								+'</li>';
+							var $li=$(html).appendTo($cusList);
+							
+							var cus=getRandomCustomer();
+							if(cus!=null){
+								$li.find("input").val(cus.account+(cus.name?"("+cus.name+")":"")+"["+cus.address+"]");
+								$li.data("cus",cus);
+								
+								var $prevLi=$li.prev("li");
+								if($prevLi.length!=0)
+									getRouteDistance($prevLi.data("cus"),cus,$li);
+								else
+									getRouteDistance({longitude:118.850323,latitude:31.958725},cus,$li);
+							}
+							
+						}
+					}
+				}
+				
+				$("ol.cusList li").bind("mousemove",function(e){
+					$(e.currentTarget).find("a").show();
+				});
+				$("ol.cusList li").bind("mouseout",function(e){
+					$(e.currentTarget).find("a").hide();
+				});
+				$("ol.cusList a[name=moveUp]").bind("click",function(e){
+					var $thisLi=$(e.currentTarget).closest("li");
+					var $prevLi=$thisLi.prev("li");
+					$thisLi.insertBefore($prevLi);
+				});
+				$("ol.cusList a[name=moveDown]").bind("click",function(e){
+					var $thisLi=$(e.currentTarget).closest("li");
+					var $nextLi=$thisLi.next("li");
+					$thisLi.insertAfter($nextLi);
+				});
+				$("ol.cusList a[name=deleteLi]").bind("click",function(e){
+					$(e.currentTarget).closest("li").remove();
+				});
+				$("ol.cusList input").bind("mouseup",function(e){
+					$(e.currentTarget).select();
+				});
+			}
+		</script>
+	</head>
+	
+	<body style="margin:0;padding:0;">
+		<div id="tabs" class="easyui-tabs">
+			<div title="设置">
+				<div>
+					<table class="common_addr">
+						<tr><th width="80px"><a href="#" onclick="" class="easyui-linkbutton" data-options="iconCls:'icon-add'">常用</a></th><th width="300px">地址</th></tr>
+						<tr><th>家  </th><td><input></td></tr>
+						<tr><th>公司</th><td><input></td></tr>
+					</table>
+				</div>
+			</div>
+			<div title="客户拜访计划">
+				<div id="customerPlan">
+
+				</div>
+			</div>
+			<div title="客户管理">
+				<table class="customer_save">
+					<tr>
+						<th>名称</th>
+						<td><input id="name" /></td>
+						<th>账号<span style="color:red;">*</span></th>
+						<td><input id="account" maxlength="6"/></td>
+					</tr>
+					<tr>
+						<th>地址<span style="color:red;">*</span></th>
+						<td><input id="address" style="width:300px;"/></td>
+						<th>地址（英文）<span style="color:red;">*</span></th>
+						<td><input id="addr_en" style="width:300px;"/></td>
+					</tr>
+					<tr>
+						<th>邮编</th>
+						<td><input id="zip" maxlength="6" /></td>
+						<th>电话</th>
+						<td><input id="telephone" /></td>
+					</tr>
+					<tr>
+						<th colspan="4" style="text-align:center;">
+							<a id="" href="#" onclick="clearCustomer();"   class="easyui-linkbutton" data-options="iconCls:'icon-remove'">清空</a>
+							<a id="" href="#" onclick="saveCustomer();"    class="easyui-linkbutton" data-options="iconCls:'icon-save'">保存</a>
+							<a id="" href="#" onclick="searchCustomers();" class="easyui-linkbutton" data-options="iconCls:'icon-search'" name="searchBtn">查询</a>
+							<a id="" href="#" onclick="cancelEdit();"      class="easyui-linkbutton" data-options="iconCls:'icon-cancel'" name="cancelBtn" style="display:none;">取消</a>
+						</th>
+					</tr>
+				</table>
+				
+				<div id="customerGrid"></div>
+			</div>
+			<div title="地图模式">
+				<div id="map" style="width:100%;"></div> 
+			</div>
+		</div>
+		
+		<div id="win" class="easyui-window" title="地图" style="width:800px;height:600px" data-options="iconCls:'icon-search',modal:true,closed:true,collapsible:false,minimizable:false,maximizable:false,resizable:false">
+			<div id="windowMap" style="width:100%;height:100%;"></div> 
+		</div>
+	</body>
+</html>

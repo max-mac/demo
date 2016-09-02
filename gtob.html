@@ -1,0 +1,31 @@
+<html>
+	<head>
+		<meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+		<script type="text/javascript" src="http://api.map.baidu.com/api?v=1.2"></script>
+		<script type="text/javascript" src="http://dev.baidu.com/wiki/static/map/API/examples/script/convertor.js"></script> 
+		<script>
+			function convert(){
+				var longitude=document.getElementById("longitude").value;
+				var latitude=document.getElementById("latitude").value;
+
+				var point=new BMap.Point(longitude,latitude);
+				BMap.Convertor.translate(point,0,function(baiduPoint){
+					document.getElementById("blongitude").value=baiduPoint.lng;
+					document.getElementById("blatitude").value=baiduPoint.lat;
+				})
+			}
+		</script>
+	</head>
+	<body>
+		经度：<input id="longitude">
+		<br>
+		纬度：<input id="latitude">
+		<br>
+		<button onclick="convert();">转换</button>
+		<br>
+		百度经度：<input id="blongitude">
+		<br>
+		百度纬度：<input id="blatitude">
+		<br>
+	</body>
+</html>
