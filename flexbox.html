@@ -1,0 +1,106 @@
+<html>
+	<head>
+		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+		<style>
+		.metro-wrapper{
+            position: absolute;
+			height:50%;
+            bottom: 10px;
+			display: flex;
+			flex-wrap: wrap;
+			justify-content:space-around;
+			align-items:center;
+        }
+		.metro-block{
+			width:30%;
+			height:30%;
+			border-radius:10px;
+			display:flex;
+			flex-direction:column;
+			justify-content:space-around;
+			align-items:center;
+		}
+        .metro-block>img{
+			display: block;
+            height: 40%;
+        }
+        .metro-block>span{
+            display: block;
+            color: #fff;
+            font-family: '黑体';
+        }
+		.metro-block:nth-child(1){
+            background: #84B1F3;
+        }
+        .metro-block:nth-child(2){
+            background: #FE9091;
+        }
+        .metro-block:nth-child(3){
+            background: #FAAB7C;
+        }
+        .metro-block:nth-child(4){
+            background: #90FE58;
+        }
+        .metro-block:nth-child(5){
+            background: #D6A4FF;
+        }
+        .metro-block:nth-child(6){
+            background: #75DEF4;
+        }
+        .metro-block:nth-child(7){
+            background: #67DDBB;
+        }
+        .metro-block:nth-child(8){
+            background: #B0B0B0;
+        }
+        .metro-block:nth-child(9){
+            background: #F88639;
+        }
+		</style>
+	</head>
+	<body style="margin:0;">
+		<div class="home-title">
+			<img src="../resources/images/logo.png" width="40">
+			<span>南京地税微税厅</span>
+		</div>
+
+		<div class="metro-wrapper">
+			<div class="metro-block" onclick="window.location.href='tax_guide.html';">
+				<img src="../resources/images/mc_bszn.png">
+				<span>办税指南</span>
+			</div>
+			<div class="metro-block" onclick="window.location.href='tax_policy.html';">
+				<img src="../resources/images/mc_xzrd.png">
+				<span>新政热点</span>
+			</div>
+			<div class="metro-block" onclick="window.location.href='article_list.html?codeValue=10&title=政策解读';">
+				<img src="../resources/images/mc_yhzc.png">
+				<span>政策解读</span>
+			</div>
+			<div class="metro-block" onclick="window.location.href='tax_calculate.html';">
+				<img src="../resources/images/mc_skjs.png">
+				<span>税款计算</span>
+			</div>
+			<div class="metro-block" onclick="window.location.href='topic.html';">
+				<img src="../resources/images/mc_ygz.png">
+				<span>营改增</span>
+			</div>
+			<div class="metro-block" onclick="window.location.href='form_type.html';">
+				<img src="../resources/images/mc_bdxz.png">
+				<span>表单下载</span>
+			</div>
+			<div class="metro-block"onclick="window.location.href='http://kf2.js-l-tax.gov.cn/new/client.php?m=Mobile&arg=njds';">
+				<img src="../resources/images/mc_zxzx.png">
+				<span>在线咨询</span>
+			</div>
+			<div class="metro-block" onclick="window.location.href='tax_school.html';">
+				<img src="../resources/images/mc_wxt.png">
+				<span>微学堂</span>
+			</div>
+			<div class="metro-block" onclick="window.location.href='tax_media.html';">
+				<img src="../resources/images/mc_wxc.png">
+				<span>微宣传</span>
+			</div>
+		</div>
+	</body>
+</html>
